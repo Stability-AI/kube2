@@ -1,8 +1,10 @@
 set -e
 
-echo hello world
+USER=$(whoami)
+echo $USER
 sudo apt-get update -y
 sudo apt-get install -y sudo pdsh git ssh
+sudo chown $USER:$USER ~/.ssh/config
 echo '    StrictHostKeyChecking no' >> ~/.ssh/config
 echo '    ServerAliveInterval 20' >> ~/.ssh/config
 echo '    TCPKeepAlive no' >> ~/.ssh/config
@@ -10,7 +12,6 @@ sudo mkdir -p /run/sshd
 sudo /usr/sbin/sshd
 sudo rm -rf /job
 sudo mkdir -p /job ~/.ssh
-USER=$(whoami)
 sudo chown $USER:$USER /job
 sudo cp /secrets/id_rsa.pub ~/.ssh/authorized_keys
 sudo chown -R $USER:$USER ~/.ssh

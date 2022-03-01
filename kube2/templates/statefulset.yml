@@ -38,10 +38,10 @@ spec:
             mountPath: "/secrets"
           # - mountPath: /data
           #   name: persistent-storage
-        # lifecycle:
-        #   postStart:
-        #     exec:
-        #       command: [ "/bin/bash", "/secrets/post_start_script.sh" ]
+        lifecycle:
+          postStart:
+            exec:
+              command: [ "/bin/bash", "/secrets/post_start_script.sh" ]
       volumes:
         - name: dshm
           emptyDir:

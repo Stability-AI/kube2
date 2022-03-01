@@ -7,7 +7,6 @@ import tempfile
 from typing import List
 
 from kube2.utils import (
-    assert_binary_on_path,
     check_name,
     generate_ssh_keypair,
     load_template,
@@ -68,7 +67,6 @@ class JobCLI(object):
         self,
         *,
         name: str,
-        cluster: str,
         docker_image: str = 'leogao2/gpt-neox:main',
         replicas: int = 1,
         attach_volumes: List[str] = [],
@@ -78,7 +76,6 @@ class JobCLI(object):
         '''
 
         check_name(name)
-        assert_binary_on_path('kubectl', 'You must first install kubectl to use this tool.')
         jobs = get_jobs()
         if name in [j.name for j in jobs]:
             print(f'Error: A job already exists with name "{name}".')
@@ -122,12 +119,20 @@ class JobCLI(object):
             # wait for them to be ready
             sh(f'kubectl rollout status --watch --logtostderr --timeout=300s statefulsets/{name}')
 
-            # TODO: ssh stuff
+            # generate the hostfile
+            hostfile_fn = os.path.join(tmpdir, 'hostfile')
+            hosts_fn = os.path.join(tmpdir, 'hosts')
+            sh(f'''kubectl get pods -o wide | grep {name} | awk '{{print $6 " slots=8"}}' > {hostfile_fn}''')
+            sh(f"cat {hostfile_fn} | cut -f1 -d' ' > {hosts_fn}")
+
+            # copy them to the node
+            home_dir = sh_capture(f'kubectl exec {name}-0 -- /bin/bash -c "cd ~; pwd"').strip()
+            sh(f'kubectl cp {hostfile_fn} {name}-0:/job')
+            sh(f'kubectl cp {hosts_fn} {name}-0:/job')
+            sh(f'kubectl cp {keypair_fn} {name}-0:{home_dir}/.ssh')
 
     def list(
         self,
-        *,
-        cluster: str,
     ):
         '''
         List all the running jobs.
@@ -147,7 +152,6 @@ class JobCLI(object):
         self,
         *,
         name: str,
-        cluster: str,
     ):
         '''
         Kill a running job.
@@ -159,7 +163,6 @@ class JobCLI(object):
         self,
         *,
         name: str,
-        cluster: str,
     ):
         '''
         SSH into the root replica of a job.

@@ -7,7 +7,6 @@ import boto3
 from datetime import datetime
 
 from kube2.utils import (
-    assert_binary_on_path,
     check_name,
     load_template,
     make_table,
@@ -56,7 +55,6 @@ class ClusterCLI(object):
         '''
 
         check_name(name)
-        assert_binary_on_path('eksctl', 'You must install `eksctl` to create a cluster.')
 
         if name in [c.name for c in get_clusters()]:
             print(f'Error: There is already a cluster named "{name}"')
@@ -103,3 +101,23 @@ class ClusterCLI(object):
         if name not in [c.name for c in get_clusters()]:
             print(f'Error: No cluster named "{name}"')
             sys.exit(1)
+
+    def current(
+        self,
+        *,
+        name: str,
+    ):
+        '''
+        Get the current cluster.
+        '''
+        pass
+
+    def switch(
+        self,
+        *,
+        name: str,
+    ):
+        '''
+        Switch to a new cluster.
+        '''
+        pass
