@@ -12,6 +12,7 @@ from kube2.utils import (
     load_template,
     make_table,
     sh,
+    sh_capture,
 )
 
 
@@ -20,6 +21,12 @@ class Cluster(object):
     name: str
     created_at: datetime
     status: str
+
+
+@dataclass
+class Context(object):
+    name: str
+    selected: bool
 
 
 def get_clusters():
@@ -37,6 +44,32 @@ def get_clusters():
         ))
     return clusters
 
+
+def get_current_context():
+    return sh_capture(f'kubectl config current-context').strip()
+
+
+def get_contexts(filter_kube2=True) -> List[Context]:
+    x = sh_capture(f'kubectl config get-contexts').strip()
+    if not x.startswith('CURRENT'):
+        print('Error:')
+        print(x)
+        sys.exit(1)
+    x = x.split('\n')[1:]
+    contexts = []
+    for line in x:
+        items = line.strip().split()
+        if items[0].strip() == '*':
+            name = items[1]
+            selected = True
+        else:
+            name = items[0]
+            selected = False
+        if filter_kube2 and not name.startswith('kube2'):
+            pass  # filter out this local context, b/c it wasn't created with kube2
+        else:
+            contexts.append(Context(name=name, selected=selected))
+    return contexts
 
 class ClusterCLI(object):
     '''
@@ -79,6 +112,11 @@ class ClusterCLI(object):
                 sys.exit(1)
             sh(f'eksctl create cluster -f {cluster_config_fn}')
 
+        # change the context name so it matches the cluster name
+        context_name = get_current_context()
+        new_context_name = f'kube2-{name}'
+        sh(f'kubectl config rename-context {context_name} {new_context_name}')
+
     def list(self):
         '''
         Lists all of the available clusters.
@@ -106,13 +144,14 @@ class ClusterCLI(object):
 
     def current(
         self,
-        *,
-        name: str,
     ):
         '''
         Get the current cluster.
         '''
-        pass
+
+        context = get_current_context()
+        cluster_name = context[context.index('-')+1:]
+        print(cluster_name)
 
     def switch(
         self,
@@ -122,4 +161,18 @@ class ClusterCLI(object):
         '''
         Switch to a new cluster.
         '''
-        pass
+
+        if name not in [c.name for c in get_clusters()]:
+            print(f'Error: No cluster named "{name}"')
+            sys.exit(1)
+
+        context_name = f'kube2-{name}'
+        contexts = get_contexts()
+        for c in contexts:
+            if c.name == context_name:
+                # cluster is already here, just need to switch to it
+                sh(f'kubectl config use-context {context_name}')
+                return
+        # TODO: configure the cluster locally
+        print('Error: switching to non-locally-built cluster not implemented yet')
+        sys.exit(1)

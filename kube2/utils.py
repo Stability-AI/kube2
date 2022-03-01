@@ -1,3 +1,4 @@
+import shlex
 import jinja2
 import os
 import subprocess
@@ -10,7 +11,8 @@ from terminaltables import AsciiTable
 
 
 def sh(cmd):
-    os.system(cmd)
+    cmd = shlex.split(cmd)
+    subprocess.run(cmd, check=True)
 
 
 def sh_capture(cmd):
