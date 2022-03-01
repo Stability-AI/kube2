@@ -8,10 +8,10 @@ from datetime import datetime
 
 from kube2.utils import (
     check_name,
+    humanize_date,
     load_template,
     make_table,
     sh,
-    time_ago_string
 )
 
 
@@ -86,7 +86,7 @@ class ClusterCLI(object):
 
         data = [['NAME', 'CREATED', 'STATUS']]
         for c in get_clusters():
-            data.append([c.name, time_ago_string(c.created_at), c.status])
+            data.append([c.name, humanize_date(c.created_at), c.status])
         print(make_table(data))
 
     def delete(

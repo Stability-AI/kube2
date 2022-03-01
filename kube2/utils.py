@@ -4,6 +4,7 @@ import subprocess
 import sys
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+import arrow
 import pytz
 from terminaltables import AsciiTable
 
@@ -54,27 +55,8 @@ def get_current_kube_context():
     return x
 
 
-def time_ago_string(date):
-    rd = relativedelta(pytz.utc.localize(datetime.now()), date)
-    if rd.years > 1:
-        years = f'{rd.years} years, '
-    elif rd.years == 1:
-        years = f'{rd.years} year, '
-    else:
-        years = ''
-    if rd.months > 1:
-        months = f'{rd.months} months, '
-    elif rd.years == 1:
-        months = f'{rd.months} month, '
-    else:
-        months = ''
-    if rd.days > 1:
-        days = f'{rd.days} days'
-    elif rd.days == 1:
-        days = f'{rd.days} day'
-    else:
-        days = ''
-    return f'{years}{months}{days} ago'
+def humanize_date(date):
+    return arrow.get(date).humanize()
 
 
 def make_table(data):
