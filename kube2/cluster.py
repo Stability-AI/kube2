@@ -173,6 +173,4 @@ class ClusterCLI(object):
                 # cluster is already here, just need to switch to it
                 sh(f'kubectl config use-context {context_name}')
                 return
-        # TODO: configure the cluster locally
-        print('Error: switching to non-locally-built cluster not implemented yet')
-        sys.exit(1)
+        sh(f'aws eks --region us-east-1 update-kubeconfig --name {name} --alias {context_name}')
