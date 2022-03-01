@@ -140,7 +140,7 @@ class ClusterCLI(object):
             print(f'Error: No cluster named "{name}"')
             sys.exit(1)
 
-        sh(f'eksctl create cluster --name {name}')
+        sh(f'eksctl delete cluster --name {name}')
 
     def current(
         self,
