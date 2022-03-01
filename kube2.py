@@ -21,4 +21,5 @@ class CLI(object):
 if __name__ == '__main__':
     assert_binary_on_path('eksctl', 'You must install `eksctl` to use this tool.')
     assert_binary_on_path('kubectl', 'You must install `kubectl` to use this tool.')
+    assert_binary_on_path('aws', 'You must install the AWS CLI tool to use this tool.')
     fire.Fire(CLI)
