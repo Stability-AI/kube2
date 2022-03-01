@@ -12,8 +12,6 @@ from kube2.utils import (
     load_template,
     make_table,
     sh,
-    sh_capture,
-    get_current_kube_context,
     time_ago_string
 )
 
@@ -105,6 +103,3 @@ class ClusterCLI(object):
         if name not in [c.name for c in get_clusters()]:
             print(f'Error: No cluster named "{name}"')
             sys.exit(1)
-
-    def connect(self):
-        pass

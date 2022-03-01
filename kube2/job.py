@@ -1,15 +1,62 @@
+from collections import defaultdict
+from dataclasses import dataclass
 from datetime import datetime
 import os
+import sys
 import tempfile
 from typing import List
 
 from kube2.utils import (
+    assert_binary_on_path,
     check_name,
     generate_ssh_keypair,
     load_template,
+    make_table,
     sh,
     sh_capture,
 )
+
+
+@dataclass
+class Job(object):
+    name: str
+    replicas: int
+    restarts: int
+    status: str
+    age: str
+
+
+def get_jobs() -> List[Job]:
+    x = sh_capture('kubectl get pods')
+    x = x.strip()
+    if not x.startswith('NAME'):
+        return []
+    else:
+        x = x.strip().split('\n')
+        x = x[1:]  # skip titles
+        d = defaultdict(lambda: [])
+        for line in x:
+            name, ready, status, restarts, age = line.split()
+            key = '-'.join(name.split('-')[:-1])
+            d[key].append([name, ready, status, restarts, age])
+        jobs = []
+        for k, v in d.items():
+            name = k
+            replicas = len(v)
+            if all(e[2] == 'Running' for e in v):
+                status = 'All Running'
+            else:
+                status = ','.join(e[2] for e in v)
+            restarts = v[0][3]
+            age = v[0][4]
+            jobs.append(Job(
+                name=name,
+                replicas=replicas,
+                restarts=restarts,
+                status=status,
+                age=age,
+            ))
+        return jobs
 
 
 class JobCLI(object):
@@ -21,6 +68,7 @@ class JobCLI(object):
         self,
         *,
         name: str,
+        cluster: str,
         docker_image: str = 'leogao2/gpt-neox:main',
         replicas: int = 1,
         attach_volumes: List[str] = [],
@@ -30,6 +78,11 @@ class JobCLI(object):
         '''
 
         check_name(name)
+        assert_binary_on_path('kubectl', 'You must first install kubectl to use this tool.')
+        jobs = get_jobs()
+        if name in [j.name for j in jobs]:
+            print(f'Error: A job already exists with name "{name}".')
+            sys.exit(1)
 
         with tempfile.TemporaryDirectory() as tmpdir:
 
@@ -66,20 +119,51 @@ class JobCLI(object):
                 f.write(ss)
             sh(f'kubectl apply -f {f.name}')
 
-    def list(self):
-        x = sh_capture('kubectl get pods')
-        if not x.strip().startswith('NAME'):
-            print(x.strip())
+            # wait for them to be ready
+            sh(f'kubectl rollout status --watch --logtostderr --timeout=300s statefulsets/{name}')
+
+            # TODO: ssh stuff
+
+    def list(
+        self,
+        *,
+        cluster: str,
+    ):
+        '''
+        List all the running jobs.
+        '''
+
+        table = [['NAME', 'REPLICAS', 'RESTARTS', 'STATUS', 'AGE']]
+        jobs = get_jobs()
+        if len(jobs) == 0:
+            # just show the raw kubectl output (it might actually be an error)
+            sh('kubectl get pods')
         else:
-            x = x.strip().split('\n')
-            x = x[1:]  # skip titles
-            for line in x:
-                name, ready, status, restarts, age = line.split()
-                print(name)
+            for job in jobs:
+                table.append([job.name, job.replicas, job.restarts, job.status, job.age])
+            print(make_table(table))
 
     def kill(
         self,
         *,
         name: str,
+        cluster: str,
     ):
+        '''
+        Kill a running job.
+        '''
+
         sh(f'kubectl delete statefulsets/{name}')
+
+    def ssh(
+        self,
+        *,
+        name: str,
+        cluster: str,
+    ):
+        '''
+        SSH into the root replica of a job.
+        '''
+
+        check_name(name)
+        sh(f'kubectl exec --stdin --tty {name}-0 -- /bin/bash')
