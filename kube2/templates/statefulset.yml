@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: neox
+spec:
+  replicas: {{ replicas }}
+  serviceName: {{ name }}
+  podManagementPolicy: "Parallel"
+  selector:
+    matchLabels:
+      app: {{ name }}
+  template:
+    metadata:
+      labels:
+        app: {{ name }}
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: neox
+        tty: true
+        image: {{ docker_image }}
+        ports:
+          - name: sshd
+            containerPort: 22
+            protocol: TCP
+        resources:
+          requests:
+            cpu: "90"
+            memory: 400Gi
+            nvidia.com/gpu: "8"
+          limits:
+            nvidia.com/gpu: "8"
+        volumeMounts:
+          - mountPath: /dev/shm
+            name: dshm
+          - name: secret-volume
+            readOnly: true
+            mountPath: "/secrets"
+          # - mountPath: /data
+          #   name: persistent-storage
+        # lifecycle:
+        #   postStart:
+        #     exec:
+        #       command: [ "/bin/bash", "/secrets/post_start_script.sh" ]
+      volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
+        - name: secret-volume
+          secret:
+            secretName: {{ secret_name }}
+            defaultMode: 0777
+        # - name: persistent-storage
+        #   persistentVolumeClaim:
+        #     claimName: fsx-claim
+      restartPolicy: Always
+

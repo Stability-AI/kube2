@@ -1,0 +1,34 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: {{ name }}
+  version: "1.19"
+  region: us-east-1
+
+availabilityZones: ["us-east-1a", "us-east-1b"]
+
+iam:
+  withOIDC: true
+
+addons:
+  - name: vpc-cni
+    version: v1.7.10-eksbuild.1  
+
+managedNodeGroups:
+  - name: p4d-ng-2c
+    instanceType: {{ instance_type }}
+    instancePrefix: p4d-ng-2c-worker
+    privateNetworking: true
+    availabilityZones: ["us-east-1b"]
+    efaEnabled: true
+    minSize: {{ nodes }}
+    desiredCapacity: {{ nodes }}
+    maxSize: {{ nodes }}
+    iam:
+      withAddonPolicies:
+        imageBuilder: true
+        autoScaler: true
+        ebs: true
+        fsx: true
+        cloudWatch: true
