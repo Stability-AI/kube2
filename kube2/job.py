@@ -131,6 +131,8 @@ class JobCLI(object):
             sh(f'kubectl cp {hosts_fn} {name}-0:/job')
             sh(f'kubectl cp {keypair_fn} {name}-0:{home_dir}/.ssh')
 
+            # TODO: generate SSH credentials and such
+
     def list(
         self,
     ):
