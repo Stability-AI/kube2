@@ -2,8 +2,8 @@ set -e
 
 USER=$(whoami)
 echo $USER
-sudo apt-get update -y
-sudo apt-get install -y sudo pdsh git ssh
+# sudo apt-get update -y
+# sudo apt-get install -y sudo pdsh git ssh
 sudo chown $USER:$USER ~/.ssh/config
 echo '    StrictHostKeyChecking no' >> ~/.ssh/config
 echo '    ServerAliveInterval 20' >> ~/.ssh/config

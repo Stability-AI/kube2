@@ -8,7 +8,6 @@ from typing import List
 
 from kube2.utils import (
     check_name,
-    generate_ssh_keypair,
     load_template,
     make_table,
     sh,
@@ -60,7 +59,7 @@ def get_jobs() -> List[Job]:
 
 class JobCLI(object):
     '''
-    Deploy, kill, and list jobs (aka groups of pods).
+    Deploy, kill, and list jobs (aka StatefulSets).
     '''
 
     def deploy(
@@ -72,7 +71,7 @@ class JobCLI(object):
         attach_volumes: List[str] = [],
     ):
         '''
-        Deploy a new job to the cluster (aka, a group of networked pods).
+        Deploy a new job (aka, a group of networked pods) to the cluster.
         '''
 
         check_name(name)
@@ -91,13 +90,14 @@ class JobCLI(object):
                 args={}
             )
             keypair_fn = os.path.join(tmpdir, 'id_rsa')
+            pubkey_fn = os.path.join(tmpdir, 'id_rsa.pub')
             script_fn = os.path.join(tmpdir, 'tmp.sh')
-            generate_ssh_keypair(keypair_fn)
+            sh(f'ssh-keygen -q -t rsa -f {keypair_fn} -N ""')
             with open(script_fn, 'w') as f:
                 f.write(script)
             sh(
                 f'kubectl create secret generic {secret_name}'
-                f'    --from-file=id_rsa.pub={keypair_fn}'
+                f'    --from-file=id_rsa.pub={pubkey_fn}'
                 f'    --from-file=post_start_script.sh={script_fn}'
             )
 

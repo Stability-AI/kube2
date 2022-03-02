@@ -1,22 +1,20 @@
-import shlex
 import jinja2
 import os
 import subprocess
 import sys
-from datetime import datetime
-from dateutil.relativedelta import relativedelta
 import arrow
-import pytz
 from terminaltables import AsciiTable
 
 
 def sh(cmd):
-    cmd = shlex.split(cmd)
-    subprocess.run(cmd, check=True)
+    try:
+        subprocess.run(cmd, check=True, shell=True)
+    except subprocess.CalledProcessError as e:
+        print('Command Failed:', e)
+        sys.exit(1)
 
 
 def sh_capture(cmd):
-    # cmd = shlex.split(cmd)
     proc = subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
@@ -33,12 +31,6 @@ def load_template(fn: str, args: dict):
     templateEnv = jinja2.Environment(loader=templateLoader)
     template = templateEnv.get_template(fn)
     return template.render(**args)
-
-
-def generate_ssh_keypair(fn: str, quiet=False):
-    '''Generates an ssh keypair into a given directory'''
-    mode = '-q' if quiet else ''
-    sh(f'ssh-keygen {mode} -t rsa -f {fn} -N ""')
 
 
 def check_name(name: str):

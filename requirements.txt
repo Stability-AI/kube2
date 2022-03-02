@@ -1,7 +1,5 @@
 fire
 boto3
 Jinja2
-python-dateutil
-pytz
 terminaltables
 arrow
