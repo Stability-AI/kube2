@@ -8,6 +8,7 @@ from typing import List
 
 from kube2.utils import (
     check_name,
+    get_current_cluster,
     load_template,
     make_table,
     sh,
@@ -74,7 +75,10 @@ class JobCLI(object):
         Deploy a new job (aka, a group of networked pods) to the cluster.
         '''
 
-        # TODO: verify cluster name
+        cluster_name = get_current_cluster()
+        if cluster_name is None:
+            print('First selected a cluster with kube2.py cluster [switch|create]')
+            sys.exit(1)
 
         check_name(name)
         jobs = get_jobs()

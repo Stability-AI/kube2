@@ -139,7 +139,8 @@ class VolumeCLI(object):
                     'persistent_volume_claim_name': pvc_name,
                     'storage_size': storage_size,
                     'storage_class_name': sc_name,
-                    'subnet_id': subnet_id,                }
+                    'subnet_id': subnet_id,
+                }
             )
             with open(script_fn, 'w') as f:
                 f.write(script)

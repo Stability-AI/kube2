@@ -131,3 +131,4 @@ class ClusterCLI(object):
         # the cluster isn't added yet, we need to add it
         sh(f'aws eks --region us-east-1 update-kubeconfig --name {name} --alias {context_name}')
         # TODO: update aws-auth ConfigMap
+        print('For now, you must manually add your user account to the ConfigMap for this cluster: https://aws.amazon.com/premiumsupport/knowledge-center/eks-cluster-connection/')
