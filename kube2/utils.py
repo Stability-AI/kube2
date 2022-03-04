@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import List, Optional
 import jinja2
 import os
@@ -10,7 +11,7 @@ from kube2.aws_utils import get_clusters
 import json
 from datetime import datetime
 
-from kube2.types import Cluster, Context, Volume
+from kube2.types import Cluster, Context, Job, Volume
 
 
 def sh(cmd):
@@ -150,3 +151,36 @@ def get_volumes() -> List[Volume]:
         ))
     # print(json.dumps(data, indent=2))
     return volumes
+
+
+def get_jobs() -> List[Job]:
+    x = sh_capture('kubectl get pods')
+    x = x.strip()
+    if not x.startswith('NAME'):
+        return []
+    else:
+        x = x.strip().split('\n')
+        x = x[1:]  # skip titles
+        d = defaultdict(lambda: [])
+        for line in x:
+            name, ready, status, restarts, age = line.split()
+            key = '-'.join(name.split('-')[:-1])
+            d[key].append([name, ready, status, restarts, age])
+        jobs = []
+        for k, v in d.items():
+            name = k
+            nodes = len(v)
+            if all(e[2] == 'Running' for e in v):
+                status = 'All Running'
+            else:
+                status = ','.join(e[2] for e in v)
+            restarts = v[0][3]
+            age = v[0][4]
+            jobs.append(Job(
+                name=name,
+                nodes=nodes,
+                restarts=restarts,
+                status=status,
+                age=age,
+            ))
+        return jobs

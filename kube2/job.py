@@ -1,5 +1,3 @@
-from collections import defaultdict
-from dataclasses import dataclass
 from datetime import datetime
 import os
 import sys
@@ -9,53 +7,13 @@ from typing import List
 from kube2.utils import (
     check_name,
     get_current_cluster,
+    get_jobs,
+    get_volumes,
     load_template,
     make_table,
     sh,
     sh_capture,
 )
-
-
-@dataclass
-class Job(object):
-    name: str
-    replicas: int
-    restarts: int
-    status: str
-    age: str
-
-
-def get_jobs() -> List[Job]:
-    x = sh_capture('kubectl get pods')
-    x = x.strip()
-    if not x.startswith('NAME'):
-        return []
-    else:
-        x = x.strip().split('\n')
-        x = x[1:]  # skip titles
-        d = defaultdict(lambda: [])
-        for line in x:
-            name, ready, status, restarts, age = line.split()
-            key = '-'.join(name.split('-')[:-1])
-            d[key].append([name, ready, status, restarts, age])
-        jobs = []
-        for k, v in d.items():
-            name = k
-            replicas = len(v)
-            if all(e[2] == 'Running' for e in v):
-                status = 'All Running'
-            else:
-                status = ','.join(e[2] for e in v)
-            restarts = v[0][3]
-            age = v[0][4]
-            jobs.append(Job(
-                name=name,
-                replicas=replicas,
-                restarts=restarts,
-                status=status,
-                age=age,
-            ))
-        return jobs
 
 
 class JobCLI(object):
@@ -68,8 +26,8 @@ class JobCLI(object):
         *,
         name: str,
         docker_image: str = 'leogao2/gpt-neox:main',
-        replicas: int = 1,
-        attach_volumes: List[str] = [],
+        nodes: int = 1,
+        attach: str = '',
     ):
         '''
         Deploy a new job (aka, a group of networked pods) to the cluster.
@@ -85,6 +43,21 @@ class JobCLI(object):
         if name in [j.name for j in jobs]:
             print(f'Error: A job already exists with name "{name}".')
             sys.exit(1)
+
+        # prepare the mounts
+        all_volumes = get_volumes()
+        mounts = []
+        attach_list = [x.strip() for x in attach.split(',') if len(x.strip()) > 0]
+        for vol_name in attach_list:
+            if vol_name not in [v.name for v in all_volumes]:
+                print(f'Error: No volume with name {vol_name}.')
+                sys.exit(1)
+            else:
+                mounts.append({
+                    'name': vol_name,
+                    'path': f'/mnt/{vol_name}',
+                    'pvc_name': f'pvc-{vol_name}',
+                })
 
         with tempfile.TemporaryDirectory() as tmpdir:
 
@@ -113,8 +86,9 @@ class JobCLI(object):
                 args={
                     'name': name,
                     'docker_image': docker_image,
-                    'replicas': replicas,
+                    'nodes': nodes,
                     'secret_name': secret_name,
+                    'mounts': mounts,
                 }
             )
             ss_fn = os.path.join(tmpdir, 'ss.yml')
@@ -146,14 +120,14 @@ class JobCLI(object):
         List all the running jobs.
         '''
 
-        table = [['NAME', 'REPLICAS', 'RESTARTS', 'STATUS', 'AGE']]
+        table = [['NAME', 'NODES', 'RESTARTS', 'STATUS', 'AGE']]
         jobs = get_jobs()
         if len(jobs) == 0:
             # just show the raw kubectl output (it might actually be an error)
             sh('kubectl get pods')
         else:
             for job in jobs:
-                table.append([job.name, job.replicas, job.restarts, job.status, job.age])
+                table.append([job.name, job.nodes, job.restarts, job.status, job.age])
             print(make_table(table))
 
     def kill(

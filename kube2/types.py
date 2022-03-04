@@ -23,3 +23,12 @@ class Volume(object):
     usage: str
     created: datetime
     attached_to_jobs: List[str]
+
+
+@dataclass
+class Job(object):
+    name: str
+    nodes: int
+    restarts: int
+    status: str
+    age: str

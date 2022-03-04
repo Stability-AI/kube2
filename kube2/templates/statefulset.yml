@@ -3,7 +3,7 @@ kind: StatefulSet
 metadata:
   name: neox
 spec:
-  replicas: {{ replicas }}
+  replicas: {{ nodes }}
   serviceName: {{ name }}
   podManagementPolicy: "Parallel"
   selector:
@@ -36,8 +36,10 @@ spec:
           - name: secret-volume
             readOnly: true
             mountPath: "/secrets"
-          # - mountPath: /data
-          #   name: persistent-storage
+        {% for mount in mounts %}
+          - mountPath: {{ mount['path'] }}
+            name: {{ mount['name'] }}
+        {% endfor %}
         lifecycle:
           postStart:
             exec:
@@ -50,8 +52,10 @@ spec:
           secret:
             secretName: {{ secret_name }}
             defaultMode: 0777
-        # - name: persistent-storage
-        #   persistentVolumeClaim:
-        #     claimName: fsx-claim
+      {% for mount in mounts %}
+        - name: {{ mount['name'] }}
+          persistentVolumeClaim:
+            claimName: {{ mount['pvc_name'] }}
+      {% endfor %}
       restartPolicy: Always
 
