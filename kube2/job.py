@@ -120,14 +120,14 @@ class JobCLI(object):
         List all the running jobs.
         '''
 
-        table = [['NAME', 'NODES', 'RESTARTS', 'STATUS', 'AGE']]
+        table = [['NAME', 'NODES', 'RESTARTS', 'STATUS', 'AGE', 'ATTACHED']]
         jobs = get_jobs()
         if len(jobs) == 0:
             # just show the raw kubectl output (it might actually be an error)
             sh('kubectl get pods')
         else:
             for job in jobs:
-                table.append([job.name, job.nodes, job.restarts, job.status, job.age])
+                table.append([job.name, job.nodes, job.restarts, job.status, job.age, ','.join(job.attached_volumes)])
             print(make_table(table))
 
     def kill(

@@ -147,10 +147,15 @@ def get_volumes() -> List[Volume]:
             capacity=capacity,
             usage='todo',  # TODO: compute usage
             created=created,
-            attached_to_jobs=['todo'],  # TODO: compute jobs it's attached to
         ))
     # print(json.dumps(data, indent=2))
     return volumes
+
+
+def get_volume_names_attached_to_job(job_name: str) -> List[str]:
+    x = sh_capture(f''' kubectl exec --stdin {job_name}-1 -- /bin/bash -c 'ls /mnt' ''').strip()
+    x = [e.strip() for e in x.split()]
+    return x
 
 
 def get_jobs() -> List[Job]:
@@ -169,6 +174,10 @@ def get_jobs() -> List[Job]:
         jobs = []
         for k, v in d.items():
             name = k
+            if all('Running' == e for e in v[0][2].split(',')):
+                attached_volumes = get_volume_names_attached_to_job(name)
+            else:
+                attached_volumes = []
             nodes = len(v)
             if all(e[2] == 'Running' for e in v):
                 status = 'All Running'
@@ -182,5 +191,6 @@ def get_jobs() -> List[Job]:
                 restarts=restarts,
                 status=status,
                 age=age,
+                attached_volumes=attached_volumes,
             ))
         return jobs

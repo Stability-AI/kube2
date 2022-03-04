@@ -7,6 +7,7 @@
 import os
 import sys
 import tempfile
+import time
 from typing import List
 import boto3
 from kube2.types import Volume
@@ -148,10 +149,11 @@ class VolumeCLI(object):
             print('Creating volume...')
             sh(f'kubectl apply -f {script_fn}')
             print('Waiting for FSx filesystem to be created (check progress here: https://console.aws.amazon.com/fsx/home?region=us-east-1)...')
-            while True:
+            for _ in range(60*2):
                 s = sh_capture(f'''kubectl get pvc pvc-my-vol -o 'jsonpath={{..status.phase}}' ''').strip()
-                if s != 'Pending':
+                if s == 'Bound':
                     break
+                time.sleep(1)
             sh(f'kubectl describe pvc | tail -n 1')
 
     def delete(
@@ -189,13 +191,12 @@ class VolumeCLI(object):
         if len(volumes) == 0:
             print('No volumes.')
         else:
-            table = [['NAME', 'CAPACITY', 'USAGE', 'CREATED', 'ATTACHED']]
+            table = [['NAME', 'CAPACITY', 'USAGE', 'CREATED']]
             for v in volumes:
                 table.append([
                     v.name,
                     v.capacity,
                     v.usage,
                     humanize_date(v.created),
-                    ','.join(v.attached_to_jobs),
                 ])
             print(make_table(table))

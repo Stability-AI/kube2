@@ -22,7 +22,6 @@ class Volume(object):
     capacity: str
     usage: str
     created: datetime
-    attached_to_jobs: List[str]
 
 
 @dataclass
@@ -32,3 +31,4 @@ class Job(object):
     restarts: int
     status: str
     age: str
+    attached_volumes: List[str]
