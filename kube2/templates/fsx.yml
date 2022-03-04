@@ -1,24 +1,24 @@
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  name: fsx-sc
+  name: {{ storage_class_name }}
 mountOptions:
 - flock
 parameters:
-  s3ExportPath: s3://eai-neox/export
-  s3ImportPath: s3://eao-neox/
-  securityGroupIds: sg-00da9d8959034c8d6
-  subnetId: subnet-0e00b9e3e1133dd56
+  # s3ImportPath: {{ s3_import_path }}
+  # s3ExportPath: {{ s3_export_path }}
+  securityGroupIds: {{ security_group_id }}
+  subnetId: {{ subnet_id }}
 provisioner: fsx.csi.aws.com
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: fsx-claim
+  name: {{ persistent_volume_claim_name }}
 spec:
   accessModes:
   - ReadWriteMany
   resources:
     requests:
-      storage: 3.6Ti
-  storageClassName: fsx-sc
+      storage: {{ storage_size }}
+  storageClassName: {{ storage_class_name }}

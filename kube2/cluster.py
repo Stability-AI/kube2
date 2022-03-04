@@ -3,73 +3,23 @@ import os
 import sys
 import tempfile
 from typing import List
-import boto3
-from datetime import datetime
 
 from kube2.utils import (
     check_name,
+    get_context_name_from_cluster_name,
+    get_contexts,
+    get_current_cluster,
+    get_current_context,
     humanize_date,
     load_template,
     make_table,
     sh,
-    sh_capture,
 )
 
+from kube2.aws_utils import (
+    get_clusters,
+)
 
-@dataclass
-class Cluster(object):
-    name: str
-    created_at: datetime
-    status: str
-
-
-@dataclass
-class Context(object):
-    name: str
-    selected: bool
-
-
-def get_clusters():
-    EKS = boto3.client('eks')
-    response = EKS.list_clusters()
-    clusters: List[Cluster] = []
-    for cluster_name in response['clusters']:
-        response2 = EKS.describe_cluster(name=cluster_name)
-        created_at = response2['cluster']['createdAt']
-        status = response2['cluster']['status']
-        clusters.append(Cluster(
-            name=cluster_name,
-            created_at=created_at,
-            status=status,
-        ))
-    return clusters
-
-
-def get_current_context():
-    return sh_capture(f'kubectl config current-context').strip()
-
-
-def get_contexts(filter_kube2=True) -> List[Context]:
-    x = sh_capture(f'kubectl config get-contexts').strip()
-    if not x.startswith('CURRENT'):
-        print('Error:')
-        print(x)
-        sys.exit(1)
-    x = x.split('\n')[1:]
-    contexts = []
-    for line in x:
-        items = line.strip().split()
-        if items[0].strip() == '*':
-            name = items[1]
-            selected = True
-        else:
-            name = items[0]
-            selected = False
-        if filter_kube2 and not name.startswith('kube2'):
-            pass  # filter out this local context, b/c it wasn't created with kube2
-        else:
-            contexts.append(Context(name=name, selected=selected))
-    return contexts
 
 class ClusterCLI(object):
     '''
@@ -114,7 +64,7 @@ class ClusterCLI(object):
 
         # change the context name so it matches the cluster name
         context_name = get_current_context()
-        new_context_name = f'kube2-{name}'
+        new_context_name = get_context_name_from_cluster_name(name)
         sh(f'kubectl config rename-context {context_name} {new_context_name}')
 
     def list(self):
@@ -149,8 +99,13 @@ class ClusterCLI(object):
         Get the current cluster.
         '''
 
-        context = get_current_context()
-        cluster_name = context[context.index('-')+1:]
+        cluster_name = get_current_cluster()
+        if cluster_name is None:
+            print('No kube2 cluster selected.')
+            print('Note: You may be using a different cluster, not created by kube2.py.'\
+                  'To check, use `kubectl config current-context`.')
+            sys.exit(1)
+
         print(cluster_name)
 
     def switch(
@@ -166,11 +121,13 @@ class ClusterCLI(object):
             print(f'Error: No cluster named "{name}"')
             sys.exit(1)
 
-        context_name = f'kube2-{name}'
+        context_name = get_context_name_from_cluster_name(name)
         contexts = get_contexts()
         for c in contexts:
             if c.name == context_name:
                 # cluster is already here, just need to switch to it
                 sh(f'kubectl config use-context {context_name}')
                 return
+        # the cluster isn't added yet, we need to add it
         sh(f'aws eks --region us-east-1 update-kubeconfig --name {name} --alias {context_name}')
+        # TODO: update aws-auth ConfigMap

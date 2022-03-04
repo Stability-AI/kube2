@@ -74,6 +74,8 @@ class JobCLI(object):
         Deploy a new job (aka, a group of networked pods) to the cluster.
         '''
 
+        # TODO: verify cluster name
+
         check_name(name)
         jobs = get_jobs()
         if name in [j.name for j in jobs]:
