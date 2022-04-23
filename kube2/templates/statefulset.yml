@@ -19,17 +19,34 @@ spec:
       - name: neox
         tty: true
         image: {{ docker_image }}
+        env:
+        - name: FI_PROVIDER
+          value: efa
+        - name: FI_EFA_USE_DEVICE_RDMA
+          value: '1'
+        - name: NCCL_DEBUG
+          value: info
+        - name: RDMAV_FORK_SAFE
+          value: '1'
+        - name: LD_PRELOAD
+          value: /opt/nccl/build/lib/libnccl.so
         ports:
           - name: sshd
             containerPort: 22
             protocol: TCP
         resources:
           requests:
+            hugepages-2Mi: 5120Mi
             cpu: "90"
-            memory: 400Gi
+            memory: 500Gi
             nvidia.com/gpu: "8"
+            vpc.amazonaws.com/efa: 4
           limits:
+            hugepages-2Mi: 5120Mi
+            cpu: "90"
+            memory: 500Gi
             nvidia.com/gpu: "8"
+            vpc.amazonaws.com/efa: 4
         volumeMounts:
           - mountPath: /dev/shm
             name: dshm
