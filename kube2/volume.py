@@ -68,7 +68,7 @@ def create_and_configure_security_group(
                     'IpProtocol': 'tcp',
                     'FromPort': 988,
                     'ToPort': 988,
-                    'IpRanges': [{'CidrIp': '192.168.0.0/16'}],
+                    'IpRanges': [{'CidrIp': '10.0.0.0/16'}],
                 },
             ],
         )

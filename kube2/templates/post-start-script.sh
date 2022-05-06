@@ -13,7 +13,6 @@ sudo /usr/sbin/sshd
 sudo rm -rf /job
 sudo mkdir -p /job ~/.ssh
 sudo chown $USER:$USER /job
-sudo cp /secrets/id_rsa.pub ~/.ssh/authorized_keys
 sudo chown -R $USER:$USER ~/.ssh
 sudo chown $USER:$USER ~/.ssh/authorized_keys
 chmod 600 ~/.ssh/authorized_keys

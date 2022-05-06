@@ -6,7 +6,7 @@ metadata:
   version: "1.19"
   region: us-east-1
 
-availabilityZones: ["us-east-1a", "us-east-1b"]
+availabilityZones: ["us-east-1a", "us-east-1d"]
 
 iam:
   withOIDC: true
@@ -16,19 +16,19 @@ addons:
     version: v1.7.10-eksbuild.1  
 
 managedNodeGroups:
-  - name: p4d-ng-2c
+  - name: cluster
     instanceType: {{ instance_type }}
-    instancePrefix: p4d-ng-2c-worker
+    instancePrefix: cluster-worker
     privateNetworking: true
-    availabilityZones: ["us-east-1b"]
+    availabilityZones: ["us-east-1d"]
     efaEnabled: true
-    minSize: {{ nodes }}
+    #minSize: {{ nodes }}
     desiredCapacity: {{ nodes }}
-    maxSize: {{ nodes }}
+    #maxSize: {{ nodes }}
     iam:
       withAddonPolicies:
         imageBuilder: true
-        autoScaler: true
+        autoScaler: false
         ebs: true
         fsx: true
         cloudWatch: true
