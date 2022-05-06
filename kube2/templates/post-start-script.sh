@@ -19,6 +19,3 @@ chmod 600 ~/.ssh/authorized_keys
 chmod 700 ~/.ssh
 echo 'export LC_ALL=C.UTF-8' >> ~/.bashrc
 echo 'export LANG=C.UTF-8' >> ~/.bashrc
-cd ~
-git clone https://github.com/EleutherAI/gpt-neox.git
-cd ~/gpt-neox && sudo python ~/gpt-neox/megatron/fused_kernels/setup.py install
