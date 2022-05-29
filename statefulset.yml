@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: test
+spec:
+  replicas: 1
+  serviceName: test
+  podManagementPolicy: "Parallel"
+  selector:
+    matchLabels:
+      app: test
+  template:
+    metadata:
+      labels:
+        app: test
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: test
+        tty: true
+        image: public.ecr.aws/w6p6i9i7/aws-efa-nccl-rdma:base-cudnn8-cuda11-ubuntu20.04
+        env:
+        - name: FI_PROVIDER
+          value: efa
+        - name: FI_EFA_USE_DEVICE_RDMA
+          value: '1'
+        - name: NCCL_DEBUG
+          value: info
+        - name: RDMAV_FORK_SAFE
+          value: '1'
+        - name: LD_PRELOAD
+          value: /opt/nccl/build/lib/libnccl.so
+        ports:
+          - name: sshd
+            containerPort: 22
+            protocol: TCP
+        resources:
+          requests:
+            cpu: "90"
+            memory: 400Gi
+            nvidia.com/gpu: "8"
+          limits:
+            nvidia.com/gpu: "8"
+        volumeMounts:
+          - mountPath: /dev/shm
+            name: dshm
+          - name: secret-volume
+            readOnly: true
+            mountPath: "/secrets"
+        lifecycle:
+          postStart:
+            exec:
+              command: [ "/bin/bash", "/secrets/post_start_script.sh" ]
+      volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
+        - name: secret-volume
+          secret:
+            secretName: ----secret-name----
+            defaultMode: 0777
+      restartPolicy: Always

@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  annotations:
+    volume.beta.kubernetes.io/storage-provisioner: fsx.csi.aws.com
+  name: big-pvc
+  namespace: default
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 108000Gi
+  storageClassName: sc-neox 
+  volumeMode: Filesystem
+  volumeName: big-pv
