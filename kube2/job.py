@@ -106,7 +106,7 @@ class JobCLI(object):
             sh(f"cat {hostfile_fn} | cut -f1 -d' ' > {hosts_fn}")
 
             # copy them to the node
-            home_dir = sh_capture(f'kubectl exec {name}-0 -- /bin/bash -c "cd ~; pwd"').strip()
+            home_dir = sh_capture(f'kubectl exec {name}-0 -- /bin/bash -c "cd ~; pwd; sudo -s"').strip()
             sh(f'kubectl cp {hostfile_fn} {name}-0:/job')
             sh(f'kubectl cp {hosts_fn} {name}-0:/job')
             sh(f'kubectl cp {keypair_fn} {name}-0:{home_dir}/.ssh')
